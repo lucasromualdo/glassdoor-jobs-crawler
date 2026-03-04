@@ -53,3 +53,10 @@ poetry run glassdoorcrawler --pages 1
 - Processo de release e checklist: `docs/release-process.md`
 - Historico de mudancas por versao: `CHANGELOG.md`
 - Classificacao de impacto de release (`release:*`) registrada em issues/PRs para apoiar SemVer
+
+## Governanca
+
+- Licenca do projeto: `LICENSE`
+- Guia de contribuicao: `CONTRIBUTING.md`
+- Politica de seguranca: `SECURITY.md`
+- Responsaveis por revisao de caminhos: `.github/CODEOWNERS`
