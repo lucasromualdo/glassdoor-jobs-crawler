@@ -25,7 +25,7 @@ poetry install
 ## Uso
 
 ```bash
-python main.py --pages 1 --output belohorizonte_vagas.xlsx
+python main.py --pages 1 --output dataset/local/belohorizonte_vagas.xlsx
 ```
 
 Se seu ambiente tiver proxies configurados (ex.: `HTTP_PROXY`) e voce quiser ignorar isso no teste local:
@@ -40,11 +40,27 @@ Ou via `poetry`:
 poetry run glassdoorcrawler --pages 1
 ```
 
-## Observacoes
+## Limites do crawler
 
 - O HTML do Glassdoor muda com frequencia; ajustes no parsing podem ser necessarios.
 - O crawler usa atraso entre requisicoes (`--delay`) para reduzir bloqueios.
 - Quando o Glassdoor retorna a pagina de seguranca do Cloudflare, o scraper tenta fallback automatico via `curl_cffi` (requer dependencias instaladas).
+- Mesmo com fallback, bloqueios temporarios podem impedir a coleta parcial ou total.
+
+## Politica de outputs locais
+
+- Planilhas geradas pelo CLI (`.xlsx`) sao artefatos locais por padrao.
+- Para execucao local, salve outputs em `dataset/local/` (ex.: `dataset/local/belohorizonte_vagas.xlsx`).
+- Apenas datasets curados em `dataset/` devem ser versionados no repositorio.
+
+## Fluxo basico de contribuicao
+
+1. Crie uma branch a partir de `master`.
+2. Faca mudancas pequenas e focadas em uma issue.
+3. Abra um Pull Request para `master`.
+4. Resolva as conversas de review antes do merge.
+
+Mais detalhes: `CONTRIBUTING.md`.
 
 ## Manutencao
 
