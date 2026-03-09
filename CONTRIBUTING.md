@@ -5,7 +5,7 @@ Obrigado por contribuir com o `glassdoorcrawler`.
 ## Fluxo de trabalho
 
 1. Crie uma branch a partir de `master`.
-2. Faça mudancas pequenas e focadas em uma issue.
+2. Faca mudancas pequenas e focadas em uma issue.
 3. Abra um Pull Request para `master`.
 4. Resolva todas as conversas de review antes do merge.
 
@@ -30,8 +30,14 @@ poetry install
 
 ```bash
 python -m pytest -q
-python main.py --pages 1 --no-proxy --output tmp_validacao_1_pagina.xlsx
+python main.py --pages 1 --no-proxy --output dataset/local/tmp_validacao_1_pagina.xlsx
 ```
+
+## Outputs locais
+
+- Nao versione arquivos `.xlsx` gerados em execucoes locais.
+- Use `dataset/local/` para saidas temporarias de validacao manual.
+- Versione apenas datasets curados que precisem ficar em `dataset/`.
 
 ## Padroes para issues e PRs
 

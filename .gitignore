@@ -8,5 +8,8 @@ build/
 *.egg-info/
 
 # Local data/output
+# Spreadsheet outputs are local artifacts by default.
 *.xlsx
+
+# Curated datasets under dataset/ can be versioned.
 !dataset/*.xlsx
