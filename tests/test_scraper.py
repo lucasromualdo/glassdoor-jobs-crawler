@@ -1,3 +1,4 @@
+import inspect
 import json
 import unittest
 from types import SimpleNamespace
@@ -5,6 +6,7 @@ from unittest import mock
 
 from bs4 import BeautifulSoup
 
+from glassdoorcrawler import cli
 from glassdoorcrawler import scraper
 
 
@@ -180,6 +182,123 @@ class ScraperParsingTests(unittest.TestCase):
         self.assertEqual(result["salary_min"], 5000)
         self.assertEqual(result["salary_max"], 9000)
         self.assertEqual(result["job_description"], "Trabalhar com Python e APIs.")
+
+    def test_get_links_from_bff_page_uses_json_for_standard_session_contract(self) -> None:
+        class _StandardSession:
+            def __init__(self, response: mock.Mock) -> None:
+                self.response = response
+                self.called_with: dict[str, object] = {}
+
+            def post(
+                self,
+                url: str,
+                headers: dict[str, str],
+                timeout: int,
+                json: dict[str, object],
+            ) -> mock.Mock:
+                self.called_with = {
+                    "url": url,
+                    "headers": headers,
+                    "timeout": timeout,
+                    "json": json,
+                }
+                return self.response
+
+        response = mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "data": {
+                "jobListings": {
+                    "jobListings": [
+                        {"jobview": {"header": {"seoJobLink": "/job-listing/backend-dev.htm"}}},
+                    ]
+                }
+            }
+        }
+
+        session = _StandardSession(response)
+        links = scraper._get_links_from_bff_page(
+            page_number=2,
+            bootstrap={"pagination_cursors": {2: "cursor-page-2"}},
+            session=session,
+        )
+
+        self.assertEqual(
+            links,
+            ["https://www.glassdoor.com/job-listing/backend-dev.htm"],
+        )
+        self.assertEqual(
+            session.called_with["url"],
+            scraper.JOB_SEARCH_RESULTS_BFF_URL,
+        )
+        self.assertIn("json", session.called_with)
+
+    def test_get_links_from_bff_page_falls_back_to_json_payload_for_legacy_session(self) -> None:
+        class _LegacySession:
+            def __init__(self, response: mock.Mock) -> None:
+                self.response = response
+                self.used_json_payload = False
+
+            def post(
+                self,
+                url: str,
+                headers: dict[str, str],
+                timeout: int,
+                json_payload: dict[str, object],
+            ) -> mock.Mock:
+                self.used_json_payload = True
+                return self.response
+
+        response = mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"data": {"jobListings": {"jobListings": []}}}
+
+        session = _LegacySession(response)
+        links = scraper._get_links_from_bff_page(
+            page_number=2,
+            bootstrap={"pagination_cursors": {2: "cursor-page-2"}},
+            session=session,
+        )
+
+        self.assertEqual(links, [])
+        self.assertTrue(session.used_json_payload)
+
+
+class ScraperOutputPolicyTests(unittest.TestCase):
+    def test_cli_default_output_path_matches_policy(self) -> None:
+        args = cli.build_parser().parse_args([])
+        self.assertEqual(args.output, scraper.DEFAULT_OUTPUT_PATH)
+
+    def test_crawl_jobs_default_output_path_matches_policy(self) -> None:
+        output_default = inspect.signature(scraper.crawl_jobs).parameters["output_path"].default
+        self.assertEqual(output_default, scraper.DEFAULT_OUTPUT_PATH)
+
+    @mock.patch("glassdoorcrawler.scraper.pd.DataFrame.to_excel", return_value=None)
+    @mock.patch("glassdoorcrawler.scraper.pd.ExcelWriter")
+    @mock.patch("glassdoorcrawler.scraper.Path.mkdir", autospec=True)
+    @mock.patch("glassdoorcrawler.scraper.get_all_links", return_value=[])
+    @mock.patch("glassdoorcrawler.scraper._build_session")
+    def test_crawl_jobs_creates_missing_output_directory(
+        self,
+        build_session_mock: mock.MagicMock,
+        _get_all_links_mock: mock.MagicMock,
+        mkdir_mock: mock.MagicMock,
+        excel_writer_mock: mock.MagicMock,
+        _to_excel_mock: mock.MagicMock,
+    ) -> None:
+        session_mock = mock.Mock()
+        build_session_mock.return_value = session_mock
+        excel_writer_mock.return_value.__enter__.return_value = mock.Mock()
+
+        df = scraper.crawl_jobs(
+            base_url="https://example.com/jobs",
+            output_path="dataset/local/result.xlsx",
+        )
+
+        self.assertTrue(df.empty)
+        mkdir_mock.assert_called_once()
+        self.assertEqual(mkdir_mock.call_args.kwargs, {"parents": True, "exist_ok": True})
+        session_mock.close.assert_called_once()
 
 
 if __name__ == "__main__":

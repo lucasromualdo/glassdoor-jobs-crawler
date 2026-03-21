@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
@@ -30,6 +31,7 @@ DEFAULT_HEADERS = {
 
 FALLBACK_IMPERSONATE_PROFILES = ("chrome124", "safari184")
 JOB_SEARCH_RESULTS_BFF_URL = "https://www.glassdoor.com.br/job-search-next/bff/jobSearchResultsQuery"
+DEFAULT_OUTPUT_PATH = "dataset/local/belohorizonte_vagas.xlsx"
 
 
 class _HttpClient:
@@ -141,14 +143,16 @@ class _HttpClient:
         url: str,
         headers: Dict[str, str],
         timeout: int,
-        json_payload: Dict[str, Any],
+        json: Optional[Dict[str, Any]] = None,
+        json_payload: Optional[Dict[str, Any]] = None,
     ) -> Any:
+        payload = json_payload if json_payload is not None else json
         return self._request(
             "POST",
             url,
             headers=headers,
             timeout=timeout,
-            json_payload=json_payload,
+            json_payload=payload,
         )
 
     def close(self) -> None:
@@ -333,13 +337,23 @@ def _get_links_from_bff_page(
         "Content-Type": "application/json",
     }
 
+    response: Any
     if session is not None and hasattr(session, "post"):
-        response = session.post(
-            JOB_SEARCH_RESULTS_BFF_URL,
-            headers=headers,
-            timeout=timeout,
-            json_payload=payload,
-        )
+        try:
+            response = session.post(
+                JOB_SEARCH_RESULTS_BFF_URL,
+                headers=headers,
+                timeout=timeout,
+                json=payload,
+            )
+        except TypeError:
+            # Backward compatibility for custom clients that still expect json_payload.
+            response = session.post(
+                JOB_SEARCH_RESULTS_BFF_URL,
+                headers=headers,
+                timeout=timeout,
+                json_payload=payload,
+            )
     else:
         response = requests.post(
             JOB_SEARCH_RESULTS_BFF_URL,
@@ -679,7 +693,7 @@ def scrap_job_page(url: str, session: Optional[Any] = None) -> Dict[str, Any]:
 def crawl_jobs(
     base_url: str,
     num_pages: int = 1,
-    output_path: str = "belohorizonte_vagas.xlsx",
+    output_path: str = DEFAULT_OUTPUT_PATH,
     delay_seconds: float = 0.5,
     use_env_proxies: bool = True,
 ) -> pd.DataFrame:
@@ -689,11 +703,13 @@ def crawl_jobs(
         links = get_all_links(num_pages, base_url, delay_seconds=delay_seconds, session=session)
         flattened = [item for sublist in links for item in sublist]
         unique_links = list(dict.fromkeys(flattened))
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
         if not unique_links:
             LOGGER.warning("No job links found.")
             df_empty = pd.DataFrame()
-            with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+            with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
                 df_empty.to_excel(writer, index=False)
             return df_empty
 
@@ -721,7 +737,7 @@ def crawl_jobs(
         bar.finish()
 
         df_glass = pd.DataFrame.from_dict(results)
-        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
             df_glass.to_excel(writer, index=False)
         return df_glass
     finally:
