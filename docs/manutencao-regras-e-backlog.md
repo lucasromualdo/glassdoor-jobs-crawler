@@ -1,6 +1,6 @@
 # Manutencao: Ruleset e Proximos Passos
 
-Atualizado em: 2026-02-26
+Atualizado em: 2026-03-20
 
 ## Ruleset atual (branch padrao `master`)
 
@@ -13,26 +13,33 @@ Regras aplicadas:
 - Exige PR para merge (`pull_request`)
 - Exige resolucao de conversas de review antes do merge
 - Nao exige approvals (por enquanto)
-- Nao exige status checks (por enquanto, sem CI)
+- Nao exige status checks obrigatorios no ruleset (por enquanto)
 
 Observacao:
 
 - Sem bypass configurado (ate o owner precisa seguir PR + resolucao de conversas)
 
+## CI atual (estado vigente)
+
+Workflow ativo: `.github/workflows/ci.yml`
+
+- Executa em `push` e `pull_request` para `master`
+- Roda matriz de Python `3.10` e `3.12`
+- Faz checks basicos (`compileall` e `pip check`) e testes (`pytest -q`)
+
 ## Quando revisar esse ruleset
 
 Rever quando:
 
-- Adicionar CI/testes automatizados
+- Promover status checks da CI para obrigatorios no ruleset
 - Comecar a receber contribuicoes externas
 - Precisar acelerar hotfix (avaliar bypass admin)
 
-## Status rapido do backlog (2026-02-26)
+## Status rapido do backlog (2026-03-20)
 
-- `#8` concluida (PR `#14`, issue fechada)
-- `#16` concluida (organizacao inicial de releases; PR `#15`, issue fechada)
-- PR `#19` aberta (corrige validacao real, parser/HTML atual, paginacao e lock/deps)
-- `#1`, `#3` e `#4` vinculadas ao release `v0.1.0` (fechamento automatico via PR `#19`)
+- `#29` aberta: alinhar default de output com politica `dataset/local`
+- `#30` aberta: robustecer contrato de sessao HTTP na paginacao BFF
+- `#31` aberta: atualizar documentacao de manutencao para estado vigente de CI/ruleset
 
 ## Convencao atual: backlog x releases
 
@@ -62,14 +69,11 @@ Motivo da separacao:
 - Evita usar milestone para dois objetivos diferentes ao mesmo tempo (planejamento e release)
 - Facilita visualizar o que entra na proxima versao vs. o que continua no backlog
 
-### Estado atual (aplicado em 2026-02-26)
+### Estado atual (aplicado em 2026-03-20)
 
 - Milestone de release ativo: `v0.1.0`
-- `#1`, `#3`, `#4` atribuídas a `v0.1.0`
-- PR `#19` atribuida a `v0.1.0`
-- `#2` e `#13` mantidas no backlog com label `backlog:ciclo-a` (sem milestone de versao)
+- `#2` mantida no backlog com label `backlog:ciclo-a` (sem milestone de versao)
 - `#5`, `#10`, `#11`, `#12` mantidas no backlog com label `backlog:ciclo-b` (sem milestone de versao)
-- Milestones antigos de ciclo (`Ciclo A...`, `Ciclo B...`) foram fechados e substituidos por labels
 
 ## Proximas issues (ordem sugerida)
 
@@ -78,10 +82,10 @@ Observacao:
 - A ordem abaixo continua valendo como prioridade de backlog.
 - Atribuir milestone de versao apenas quando a issue entrar de fato no release.
 
-1. `#1` validar execucao real do crawler (1 pagina)
-2. `#4` adaptar parser ao HTML atual do Glassdoor
-3. `#2` adicionar testes de parsing e paginacao
-4. `#13` configurar CI no GitHub Actions (pytest + checks basicos)
+1. `#30` robustecer contrato de sessao HTTP na paginacao BFF
+2. `#29` alinhar default de output com politica `dataset/local`
+3. `#31` manter documentacao de governanca sincronizada com CI/ruleset
+4. `#2` adicionar testes de parsing e paginacao
 5. `#3` atualizar dependencias e regenerar `poetry.lock`
 6. `#12` adicionar LICENSE e documentos de governanca
 7. `#11` configurar Dependabot
@@ -101,7 +105,7 @@ Referencia detalhada: `docs/release-process.md`
 
 ## Separacao pratica para releases (resumo)
 
-- Ciclo A (label `backlog:ciclo-a`): `#1`, `#4`, `#3` + recomendados `#2`, `#13`
+- Ciclo A (label `backlog:ciclo-a`): `#1`, `#4`, `#3` + recomendado `#2`
 - Ciclo B (label `backlog:ciclo-b`): `#12`, `#11`, `#10`, `#5`
 - Concluidas relevantes para historico de release: `#6`, `#8`, `#16`
 
@@ -109,9 +113,9 @@ Exemplo de uso com milestone:
 
 - Release `v0.1.0`: `#1`, `#4`, `#3` (e PR que entrega esses itens)
 
-## Ajustes de ruleset (depois que tiver CI)
+## Ajustes de ruleset com CI ativo
 
-Quando houver workflow de testes:
+Com workflow de testes ativo, proximo passo recomendado:
 
 1. Exigir status checks obrigatorios (ex.: testes)
 2. Opcional: exigir `1` approval

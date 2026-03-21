@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from .scraper import crawl_jobs
+from .scraper import DEFAULT_OUTPUT_PATH, crawl_jobs
 
 DEFAULT_URL = (
     "https://www.glassdoor.com.br/Vaga/"
@@ -34,7 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output",
-        default="belohorizonte_vagas.xlsx",
+        default=DEFAULT_OUTPUT_PATH,
         help="Output Excel file path",
     )
     parser.add_argument(
