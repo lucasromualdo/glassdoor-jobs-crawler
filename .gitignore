@@ -6,6 +6,8 @@ venv/
 dist/
 build/
 *.egg-info/
+.sfdx/
+tmpi6ahw7jz/
 
 # Local data/output
 # Spreadsheet outputs are local artifacts by default.
