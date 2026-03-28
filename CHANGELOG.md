@@ -19,6 +19,21 @@ Enquanto o projeto estiver em `0.x`, mudancas podem acontecer com mais frequenci
 ### Removed
 - Placeholder para remocoes ainda nao lancadas.
 
+## [0.1.2] - 2026-03-28
+
+### Added
+- Nenhuma nova funcionalidade nesta versao.
+
+### Changed
+- Documentacao de manutencao/backlog atualizada para refletir o estado atual de CI e ruleset (`#31`).
+
+### Fixed
+- Default de output alinhado com a politica de salvar planilhas locais em `dataset/local` (`#29`).
+- Contrato de sessao HTTP robustecido na paginacao BFF para reduzir falhas de coleta (`#30`).
+
+### Removed
+- Nenhuma remocao nesta versao.
+
 ## [0.1.1] - 2026-02-28
 
 ### Added
