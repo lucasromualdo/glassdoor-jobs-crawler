@@ -1,0 +1,121 @@
+name: Daily Issue Automation
+
+on:
+  schedule:
+    # 07:00 America/Sao_Paulo (UTC-3)
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  plan-and-execute:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.select.outputs.should_run }}
+      issue_number: ${{ steps.select.outputs.issue_number }}
+      issue_title: ${{ steps.select.outputs.issue_title }}
+    steps:
+      - name: Select one issue or alert
+        id: select
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const openPrs = await github.paginate(github.rest.pulls.list, {
+              owner,
+              repo,
+              state: 'open',
+              base: 'master',
+              per_page: 100,
+            });
+
+            if (openPrs.length > 0) {
+              const body = [
+                'Existe pelo menos 1 PR aberto para `master`.',
+                'Nenhuma nova issue será executada até aprovação e merge.',
+                '',
+                'PRs pendentes:',
+                ...openPrs.map((pr) => `- #${pr.number} ${pr.title}`),
+              ].join('\n');
+
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: '[Alerta Diário] PR pendente de aprovação/merge',
+                body,
+                labels: ['automation-alert'],
+              }).catch(async () => {
+                core.info('Não foi possível criar issue de alerta (label pode não existir).');
+              });
+
+              core.setOutput('should_run', 'false');
+              return;
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              sort: 'created',
+              direction: 'asc',
+              per_page: 100,
+            });
+
+            const openIssues = issues.filter((i) => !i.pull_request);
+
+            if (openIssues.length === 0) {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: '[Alerta Diário] Sem issues abertas',
+                body: 'Todas as issues estão fechadas no momento. Nada para executar hoje.',
+                labels: ['automation-alert'],
+              }).catch(async () => {
+                core.info('Não foi possível criar issue de alerta (label pode não existir).');
+              });
+
+              core.setOutput('should_run', 'false');
+              return;
+            }
+
+            const selected = openIssues[0];
+            core.setOutput('issue_number', String(selected.number));
+            core.setOutput('issue_title', selected.title);
+            core.setOutput('should_run', 'true');
+
+      - name: Checkout
+        if: steps.select.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Prepare branch payload for selected issue
+        if: steps.select.outputs.should_run == 'true'
+        run: |
+          python scripts/issue_worker.py \
+            --issue-number "${{ steps.select.outputs.issue_number }}" \
+            --issue-title "${{ steps.select.outputs.issue_title }}"
+
+      - name: Create Pull Request
+        if: steps.select.outputs.should_run == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(issue #${{ steps.select.outputs.issue_number }}): execução diária automatizada"
+          branch: "automation/issue-${{ steps.select.outputs.issue_number }}"
+          base: master
+          title: "[Daily] Executa issue #${{ steps.select.outputs.issue_number }}"
+          body: |
+            Execução automática diária da issue #${{ steps.select.outputs.issue_number }}.
+
+            Closes #${{ steps.select.outputs.issue_number }}
+          labels: |
+            automated-issue
+            needs-approval
+          draft: false
