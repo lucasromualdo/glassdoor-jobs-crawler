@@ -91,7 +91,7 @@ jobs:
 
       - name: Checkout
         if: steps.select.outputs.should_run == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: master
 
